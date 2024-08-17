@@ -1,0 +1,79 @@
+parameters:
+  - name: debugMode
+    displayName: "Whether debug mode should be enabled within the script"
+    type: boolean
+    default: false
+
+  - name: terraformVersion
+    displayName: "Select the Terraform version to install"
+    type: string
+    values:
+      - latest
+      - 1.9.x
+      - 1.8.x
+    default: latest
+
+  - name: poolName
+    displayName: "The name of the pool to use"
+    type: string
+    values:
+      - "Default"
+      - "Azure Pipeline"
+      - "lbd-linux-pool"
+    default: "Default"
+
+steps:
+  - pwsh: |
+        if ($IsLinux) {
+          brew install tenv
+        }
+        elseif ($IsMacOS) {
+          brew install tenv
+        }
+        elseif ($IsWindows) {
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          choco install tenv -y
+        }
+
+        function InstallTerraform($versionConstraint) {
+          $escapedVersionConstraint = [regex]::Escape($versionConstraint)
+
+          # Get the latest version that matches the major and minor version constraint
+          $version = tenv tf list-remote | Select-String "^${escapedVersionConstraint}\." | Select-Object -Last 1 | ForEach-Object { $_.ToString().Trim() }
+
+          # Clean the version by removing any "(installed)" suffix
+          $cleanVersion = $version -replace '\s*\(installed\)\s*', ''
+
+          if ($null -eq $cleanVersion -or $cleanVersion -eq '') {
+              Write-Host "No matching version found for constraint $versionConstraint." -ForegroundColor Red
+              exit 1
+          }
+
+          # Install and use the specific version
+          Write-Host "Installing Terraform version $cleanVersion." -ForegroundColor Cyan
+          tenv tf install $cleanVersion
+          tenv tf use $cleanVersion
+        }
+
+        switch ("${{ parameters.terraformVersion }}") {
+          "latest" {
+            Write-Host "Installing the latest version of Terraform." -ForegroundColor Cyan
+            tenv tf install latest
+            tenv tf use latest
+          }
+          "1.9.x" {
+            InstallTerraform '1.9'
+          }
+          "1.8.x" {
+            InstallTerraform '1.8'
+          }
+          default {
+            Write-Host "Invalid Terraform version specified."
+            exit 1
+          }
+        }
+    displayName: 'Install Terraform version: ${{ parameters.terraformVersion }}'
+    continueOnError: false
+    enabled: true
