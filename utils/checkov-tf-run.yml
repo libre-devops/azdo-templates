@@ -50,7 +50,7 @@ steps:
             }
         }
 
-        checkov -f ${{ parameters.planFile }}.json --skip-check ${{ parameters.checkovSkipChecks }}
+        checkov -f ${{ parameters.planFile }}.json --skip-check $skippedChecks
 
     displayName: "Run CheckOv"
     continueOnError: false
