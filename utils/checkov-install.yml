@@ -1,0 +1,57 @@
+parameters:
+  - name: installPython
+    displayName: "Select whether to install Python"
+    type: boolean
+    default: true
+
+steps:
+  - pwsh: |
+
+      function Convert-ToBoolean($value) {
+          $valueLower = $value.ToLower()
+          if ($valueLower -eq "true") {
+              return $true
+          }
+          elseif ($valueLower -eq "false") {
+              return $false
+          }
+          else {
+              Write-Error "Error: Invalid value - $value. Exiting."
+              exit 1
+          }
+      }
+
+      $InstallPython = Convert-ToBoolean("${{ parameters.installPython }}")
+
+      if ($InstallPython) {
+          if ($IsLinux) {
+            brew install python3
+            pip3 install checkov
+          }
+          elseif ($IsMacOS) {
+            brew install python3
+            pip3 install checkov
+          }
+          elseif ($IsWindows) {
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          choco install python3 -y
+          pip3 install checkov
+          }
+        }
+        else {
+          if ($IsLinux) {
+            brew install checkov
+          }
+          elseif ($IsMacOS) {
+            brew install checkov
+          }
+          elseif ($IsWindows) {
+            pip3 install checkov
+          }
+        }
+
+    displayName: "Install CheckOv"
+    continueOnError: false
+    enabled: true

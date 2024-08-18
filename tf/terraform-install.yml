@@ -1,8 +1,4 @@
 parameters:
-  - name: debugMode
-    displayName: "Whether debug mode should be enabled within the script"
-    type: boolean
-    default: false
 
   - name: terraformVersion
     displayName: "Select the Terraform version to install"
@@ -12,15 +8,6 @@ parameters:
       - 1.9.x
       - 1.8.x
     default: latest
-
-  - name: poolName
-    displayName: "The name of the pool to use"
-    type: string
-    values:
-      - "Default"
-      - "Azure Pipeline"
-      - "lbd-linux-pool"
-    default: "Default"
 
 steps:
   - pwsh: |

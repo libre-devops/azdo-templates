@@ -1,0 +1,59 @@
+parameters:
+  - name: terraformCodeLocation
+    default: "terraform"
+    displayName: "Location of the Terraform code"
+    type: string
+
+  - name: planFile
+    displayName: "Plan file name"
+    type: string
+    default: "tfplan-apply"
+
+  - name: checkovSkipChecks
+    displayName: "Comma-separated list of CheckOv checks to skip"
+    type: string
+    default: ""
+
+steps:
+  - pwsh: |
+
+      terraform show -json ${{ parameters.planFile }} > ${{ parameters.planFile }}.json
+
+    displayName: "Convert Terraform Plan"
+    continueOnError: false
+    enabled: true
+    workingDirectory: ${{ parameters.terraformCodeLocation }}
+
+  - pwsh: |
+
+        $skippedChecks = "${{ parameters.checkOvSkipChecks }}"
+        $skippedChecksMessage = ""
+
+        # Handle the case where the skippedChecks variable is explicitly set to empty quotes
+        if ($skippedChecks -eq "''" -or $skippedChecks -eq '""' -or [string]::IsNullOrEmpty($skippedChecks)) {
+            Write-Host "No tests are being skipped." -ForegroundColor Green
+        } else {
+            # Split the CSV into lines and process each check
+            $checks = $skippedChecks -split ','
+            foreach ($check in $checks) {
+                # Only add non-empty checks to the message
+                if (-not [string]::IsNullOrEmpty($check)) {
+                    $skippedChecksMessage += " - $check`n"
+                }
+            }
+            
+            if (-not [string]::IsNullOrEmpty($skippedChecksMessage)) {
+                Write-Host "The following tests are being skipped:" -ForegroundColor Yellow
+                Write-Host $skippedChecksMessage -ForegroundColor Yellow
+            } else {
+                Write-Host "No tests are being skipped." -ForegroundColor Green
+            }
+        }
+
+        checkov -f ${{ parameters.planFile }}.json --skip-check ${{ parameters.checkovSkipChecks }}
+
+    displayName: "Run CheckOv"
+    continueOnError: false
+    enabled: true
+    workingDirectory: ${{ parameters.terraformCodeLocation }}
+  
