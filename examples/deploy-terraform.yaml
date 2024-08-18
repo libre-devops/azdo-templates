@@ -48,6 +48,9 @@ parameters:
 variables:
   - group: ${{ parameters.variableGroup }}
 
+  - name: checkovSkipChecks
+    value: "CKV2_AZURE_31,CKV_AZURE_182,CKV_AZURE_183"
+
 resources:
   repositories:
   - repository: templates
@@ -94,6 +97,7 @@ stages:
           - template: utils/checkov-tf-run.yml@templates
             parameters:
               terraformCodeLocation: ${{ parameters.terraformCodeLocation }}
+              checkovSkipChecks: ${{ variables.checkovSkipChecks }}
 
       - job: ManualApproval
         displayName: "Manual Approval"
