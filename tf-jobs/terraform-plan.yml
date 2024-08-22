@@ -1,0 +1,108 @@
+parameters:
+  - name: terraformCodeLocation
+    default: "terraform"
+    displayName: "Location of the Terraform code"
+    type: string
+
+  - name: serviceConnection
+    displayName: "Service Connection"
+    type: string
+
+  - name: backendUseAzureAdAuth
+    displayName: "Use Azure AD for Authentication"
+    type: string
+    default: "true"
+
+  - name: backendResourceGroup
+    displayName: "Backend Resource Group Name"
+    type: string
+
+  - name: backendStorageAccount
+    displayName: "Backend Storage Account Name"
+    type: string
+
+  - name: backendContainerName
+    displayName: "Backend Container Name"
+    type: string
+
+  - name: storageUseAzureAD
+    displayName: "Use Azure AD for Storage Authentication"
+    type: string
+    default: "true"
+
+  - name: useOidcAuth
+    displayName: "Use OIDC for Authentication"
+    type: string
+    default: "false"
+
+  - name: useManagedIdentityAuth
+    displayName: "Use Managed Identity for Authentication"
+    type: string
+    default: "true"
+
+  - name: poolName
+    displayName: "Pool Name"
+    type: string
+    values:
+      - "Default"
+      - "Azure Pipeline"
+      - "lbd-linux-pool"
+    default: "Default"
+
+  - name: terraformVersion
+    displayName: "Select the Terraform version to install"
+    type: string
+    values:
+      - latest
+      - 1.9.x
+      - 1.8.x
+    default: latest
+
+  - name: dependsOn
+    displayName: "Depends On"
+    type: object
+    default: []
+
+  - name: checkovSkipChecks
+    displayName: "Comma-separated list of CheckOv checks to skip"
+    type: string
+    default: ""
+
+jobs:
+  - job: TerraformPlan
+    displayName: "Terraform Init and Plan"
+    pool: ${{ parameters.poolName }}
+    dependsOn: ${{ parameters.dependsOn }}
+    steps:
+      - checkout: self
+
+      # Install Terraform
+      - template: ../tf/terraform-install.yml@templates
+        parameters:
+          terraformVersion: ${{ parameters.terraformVersion }}
+
+      - template: ../utils/checkov-install.yml@templates
+        parameters:
+          installPython: true
+
+      # Terraform Init
+      - template: ../tf/terraform-init.yml@templates
+        parameters:
+          terraformCodeLocation: ${{ parameters.terraformCodeLocation }}
+          serviceConnection: ${{ parameters.serviceConnection }}
+          backendResourceGroup: ${{ parameters.backendResourceGroup }}
+          backendStorageAccount: ${{ parameters.backendStorageAccount }}
+          backendContainerName: ${{ parameters.backendContainerName }}
+
+      # Terraform Plan
+      - template: ../tf/terraform-plan.yml
+        parameters:
+          terraformCodeLocation: ${{ parameters.terraformCodeLocation }}
+          subscriptionId: $[ dependencies.TerraformPlan.outputs['AzureLogin.ARM_SUBSCRIPTION_ID'] ]
+          clientId: $[ dependencies.TerraformPlan.outputs['AzureLogin.ARM_CLIENT_ID'] ]
+          tenantId: $[ dependencies.TerraformPlan.outputs['AzureLogin.ARM_TENANT_ID'] ]
+
+      - template: ../utils/checkov-tf-run.yml
+        parameters:
+          terraformCodeLocation: ${{ parameters.terraformCodeLocation }}
+          checkovSkipChecks: ${{ parameters.checkovSkipChecks }}

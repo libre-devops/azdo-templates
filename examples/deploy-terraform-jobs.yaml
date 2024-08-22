@@ -1,0 +1,93 @@
+name: $(Build.DefinitionName)-$(date:yyyyMMdd)$(rev:.r)
+
+trigger: none
+
+parameters:
+  - name: env
+    default: dev
+    displayName: "Environment Name"
+    type: string
+    values:
+      - dev
+      - uat
+      - prod
+
+  - name: terraformCodeLocation
+    default: "$(Build.SourcesDirectory)/terraform"
+    displayName: "Location of the Terraform code"
+    type: string
+
+  - name: poolName
+    displayName: "Pool Name"
+    type: string
+    values:
+      - "Default"
+      - "Azure Pipeline"
+      - "lbd-linux-pool"
+    default: "Default"
+
+  - name: terraformVersion
+    displayName: "Terraform Version"
+    type: string
+    values:
+      - latest
+      - 1.9.x
+      - 1.8.x
+    default: latest
+
+  - name: serviceConnection
+    displayName: Service Connection
+    type: string
+    default: "ldo-azdo-fed-tst-01"
+
+  - name: variableGroup
+    displayName: "Variable Group"
+    type: string
+    default: "terraform-test-vg"
+
+variables:
+  - group: ${{ parameters.variableGroup }}
+
+  - name: checkovSkipChecks
+    value: "CKV2_AZURE_31,CKV_AZURE_182,CKV_AZURE_183"
+
+resources:
+  repositories:
+  - repository: templates
+    type: git
+    name: libredevops/templates
+    ref: main
+  - repository: terraform-modules
+    type: git
+    name: libredevops/terraform-modules
+    ref: main
+
+stages:
+  - stage: "${{ parameters.env }}"
+    displayName: "${{ parameters.env }} Stage"
+    jobs:
+      - template: tf-jobs/terraform-plan.yml@templates
+        parameters:
+          terraformCodeLocation: ${{ parameters.terraformCodeLocation }}
+          serviceConnection: ${{ parameters.serviceConnection }}
+          backendResourceGroup: $(TF_VAR_ARM_BACKEND_STORAGE_RG_NAME)
+          backendStorageAccount: $(TF_VAR_ARM_BACKEND_STORAGE_ACCOUNT)
+          backendContainerName: $(TF_VAR_ARM_BACKEND_CONTAINER_NAME)
+          checkovSkipChecks: ${{ variables.checkovSkipChecks }}
+
+      - template: tf-jobs/terraform-manual-approval.yml@templates
+        parameters:
+          notifyUsers: "craigthackerx@gmail.com"
+          dependsOn: 
+            - TerraformPlan  # The Manual Approval job depends on the Plan job
+
+      - template: tf-jobs/terraform-apply.yml@templates
+        parameters:
+          terraformCodeLocation: ${{ parameters.terraformCodeLocation }}
+          serviceConnection: ${{ parameters.serviceConnection }}
+          backendResourceGroup: $(TF_VAR_ARM_BACKEND_STORAGE_RG_NAME)
+          backendStorageAccount: $(TF_VAR_ARM_BACKEND_STORAGE_ACCOUNT)
+          backendContainerName: $(TF_VAR_ARM_BACKEND_CONTAINER_NAME)
+          checkovSkipChecks: ${{ variables.checkovSkipChecks }}
+          dependsOn: 
+            - ManualApproval  # The Apply job depends on the Approval job
