@@ -66,6 +66,17 @@ steps:
     enabled: true
 
   - pwsh: |
+        $collectionUri = "$(System.CollectionUri)"
+        $orgName = ($collectionUri -split "/")[-1]
+        git config --global url."https://$env:SYSTEM_ACCESSTOKEN@dev.azure.com".insteadOf "https://$orgName@dev.azure.com"
+    displayName: 'Set extra header for terraform modules clone'
+    name: 'SetExtraHeader'
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    continueOnError: false
+    enabled: true
+
+  - pwsh: |
         terraform init `
         -backend-config="resource_group_name=$(TF_VAR_ARM_BACKEND_STORAGE_RG_NAME)" `
         -backend-config="storage_account_name=$(TF_VAR_ARM_BACKEND_STORAGE_ACCOUNT)" `
