@@ -2,7 +2,7 @@ parameters:
   - name: installPython
     displayName: "Select whether to install Python"
     type: boolean
-    default: true
+    default: false
 
 steps:
   - pwsh: |
