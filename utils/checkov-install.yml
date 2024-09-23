@@ -26,11 +26,13 @@ steps:
       if ($InstallPython) {
           if ($IsLinux) {
             brew install python3
-            pip3 install checkov
+            brew install pipx
+            pipx install checkov
           }
           elseif ($IsMacOS) {
             brew install python3
-            pip3 install checkov
+            brew install pipx
+            pipx install checkov
           }
           elseif ($IsWindows) {
           Set-ExecutionPolicy Bypass -Scope Process -Force
