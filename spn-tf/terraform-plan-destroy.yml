@@ -1,0 +1,52 @@
+parameters:
+  - name: terraformCodeLocation
+    default: "terraform"
+    displayName: "Location of the Terraform code"
+    type: string
+
+  - name: subscriptionId
+    displayName: "Azure Subscription ID"
+    type: string
+
+  - name: clientId
+    displayName: "Service Principal Client ID"
+    type: string
+
+  - name: tenantId
+    displayName: "Service Principal Tenant ID"
+    type: string
+
+  - name: clientSecret
+    displayName: "Service Principal Client Secret"
+    type: string
+
+  - name: backendUseAzureAdAuth
+    displayName: "Use Azure AD for Authentication"
+    type: string
+    default: "true"
+
+  - name: storageUseAzureAD
+    displayName: "Use Azure AD for Storage Authentication"
+    type: string
+    default: "true"
+
+  - name: planFile
+    displayName: "Plan file name"
+    type: string
+    default: "tfplan-destroy"
+
+steps:
+
+  - pwsh: |
+        terraform plan -destroy -out=${{ parameters.planFile }}
+    displayName: 'Terraform plan destroy'
+    workingDirectory: ${{ parameters.terraformCodeLocation }}
+    continueOnError: false
+    enabled: true
+    env:
+      ARM_STORAGE_USE_AZUREAD: ${{ parameters.storageUseAzureAD }}
+      ARM_USE_AZUREAD: ${{ parameters.backendUseAzureAdAuth }}
+      ARM_CLIENT_ID: ${{ parameters.clientId }}
+      ARM_TENANT_ID: ${{ parameters.tenantId }}
+      ARM_SUBSCRIPTION_ID: ${{ parameters.subscriptionId }}
+      ARM_CLIENT_SECRET: ${{ parameters.clientSecret }}
