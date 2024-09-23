@@ -98,6 +98,8 @@ jobs:
           subscriptionId: $[ dependencies.TerraformPlan.outputs['AzureLogin.ARM_SUBSCRIPTION_ID'] ]
           clientId: $[ dependencies.TerraformPlan.outputs['AzureLogin.ARM_CLIENT_ID'] ]
           tenantId: $[ dependencies.TerraformPlan.outputs['AzureLogin.ARM_TENANT_ID'] ]
+          clientSecret: $[ dependencies.TerraformPlan.outputs['AzureLogin.ARM_CLIENT_SECRET'] ]
+
 
       # Checkov Security Scan
       - template: ../utils/checkov-tf-run.yml
