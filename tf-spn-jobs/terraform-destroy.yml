@@ -90,7 +90,7 @@ jobs:
           clientSecret: $[ dependencies.TerraformPlan.outputs['AzureLogin.ARM_CLIENT_SECRET'] ]
 
       # Terraform Apply
-      - template: ../tf/terraform-destroy.yml
+      - template: ../spn-tf/terraform-destroy.yml
         parameters:
           terraformCodeLocation: ${{ parameters.terraformCodeLocation }}
           subscriptionId: $[ dependencies.TerraformDestroy.outputs['AzureLogin.ARM_SUBSCRIPTION_ID'] ]
